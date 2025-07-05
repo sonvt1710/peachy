@@ -18,7 +18,14 @@ struct BrowserView: View {
     
     var body: some View {
         NavigationView {
-            List(selection: $viewModel.selectedTag) {
+            List(selection: Binding(
+                get: { viewModel.selectedTag },
+                set: { newValue in
+                    DispatchQueue.main.async {
+                        viewModel.selectedTag = newValue
+                    }
+                }
+            )) {
                 Text("TAGS")
                     .bold()
                     .font(.caption)
@@ -61,15 +68,19 @@ struct BrowserView: View {
             }
         }
         .onChange(of: viewModel.kaomojis) { list in
-            if selectedKaomoji != nil {
-                selectedKaomoji = list.first
+            DispatchQueue.main.async {
+                if selectedKaomoji != nil {
+                    selectedKaomoji = list.first
+                }
             }
         }
         .onChange(of: selectedKaomojiIDs) { ids in
-            if ids.count == 1, let id = ids.first {
-                selectedKaomoji = viewModel.kaomojis.first(where: { $0.id == id })
-            } else {
-                selectedKaomoji = nil
+            DispatchQueue.main.async {
+                if ids.count == 1, let id = ids.first {
+                    selectedKaomoji = viewModel.kaomojis.first(where: { $0.id == id })
+                } else {
+                    selectedKaomoji = nil
+                }
             }
         }
         .frame(minWidth: 640, minHeight: 480)

@@ -25,7 +25,7 @@ final class BrowserViewModel: NSObject, ObservableObject {
     }
 
     @Published private(set) var query: String = ""
-    @Published private(set) var displayMode: BrowserDisplayMode = .grid
+    @Published private(set) var displayMode: BrowserDisplayMode = .list
     @Published var selectedTag: String?
     @Published var kaomojis: [Kaomoji] = []
     let kaomojiTags: [String] = {
@@ -43,18 +43,21 @@ final class BrowserViewModel: NSObject, ObservableObject {
     }
 
     private func updateKaomojiList() {
-        kaomojiStore.$allKaomojis.combineLatest($query, $selectedTag)
-            .map { items, query, tag -> [Kaomoji] in
-                if !query.isEmpty {
-                    let normalized = query.lowercased()
-                    return items.filter { $0.tags.first { $0.contains(normalized) } != nil }
-                } else if let tag = tag, !tag.isEmpty {
-                    return items.filter { $0.tags.contains(tag) }
-                } else {
-                    return items
-                }
+        kaomojiStore.$allKaomojis.combineLatest(
+            $query.debounce(for: .milliseconds(300), scheduler: DispatchQueue.main),
+            $selectedTag
+        )
+        .map { items, query, tag -> [Kaomoji] in
+            if !query.isEmpty {
+                let normalized = query.lowercased()
+                return items.filter { $0.tags.first { $0.contains(normalized) } != nil }
+            } else if let tag = tag, !tag.isEmpty {
+                return items.filter { $0.tags.contains(tag) }
+            } else {
+                return items
             }
-            .assign(to: &$kaomojis)
+        }
+        .assign(to: &$kaomojis)
     }
 
     private func updateContentTitle() {
